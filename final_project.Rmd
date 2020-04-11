@@ -1,0 +1,74 @@
+---
+title: "Final Project"
+author: "Jacob Hansen"
+date: "4/10/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(readxl)
+library(readr)
+library(janitor)
+library(ggplot2)
+library(ggthemes)
+```
+
+```{r data_cleaning, include=FALSE}
+reg_2017 <- read.csv("2017-01-01.csv", skip = 4) %>% 
+  clean_names() %>% 
+  filter(date_period == "43847") %>% 
+  head(15) %>% 
+  mutate(year = 2017) %>% 
+  select(county, year, democratic, republican)
+
+reg_2018 <- read.csv("2018-01-01.csv", skip = 4) %>% 
+  clean_names() %>% 
+  filter(date_period == "43848") %>% 
+  head(15) %>% 
+  mutate(year = 2018) %>% 
+  select(county, year, democratic, republican)
+
+reg_2019 <- read.csv("2019-01-01.csv", skip = 5) %>% 
+  clean_names() %>% 
+  filter(date_period == "43849") %>% 
+  head(15) %>% 
+  mutate(year = 2019) %>% 
+  select(county, year, democratic, republican)
+
+reg_2020 <- read.csv("2020-01-21.csv", skip = 5) %>% 
+  clean_names() %>% 
+  filter(date_period == "43850") %>% 
+  head(15) %>% 
+  mutate(year = 2020) %>% 
+  select(county, year, democratic, republican)
+
+reg_2017_to_2020 <- reg_2017 %>% 
+  full_join(reg_2018) %>% 
+  full_join(reg_2019) %>% 
+  full_join(reg_2020) %>% 
+  arrange(county) %>% 
+  pivot_longer(names_to = "party",
+               values_to = "registration",
+               cols = c(democratic:republican))
+```
+
+```{r reg_plot}
+reg_plot <- function(x){
+  reg_2017_to_2020 %>% 
+    filter(county == x) %>% 
+    ggplot(aes(x = year, y = registration, color = party)) +
+    geom_line(show.legend = FALSE, size = 0.54) +
+    scale_color_manual(values = c("blue", "red")) +
+    labs(x = "Year",
+         y = "Registration",
+         title = "Party Registration Figures",
+         caption = "Source: Arizona Secretary of State") +
+    theme_fivethirtyeight()
+}
+
+reg_plot("Pima")
+```
+
