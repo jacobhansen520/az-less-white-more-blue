@@ -7,6 +7,7 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+options(scipen = 999)
 
 library(tidyverse)
 library(readxl)
@@ -14,36 +15,39 @@ library(readr)
 library(janitor)
 library(ggplot2)
 library(ggthemes)
+library(tidycensus)
+census_api_key("bc6535753047a343a531d92be52cfa8b40d17182", install = TRUE, overwrite = TRUE)
+readRenviron("~/.Renviron")
 ```
 
 ```{r data_cleaning, include=FALSE}
-reg_2017 <- read.csv("2017-01-01.csv", skip = 4) %>% 
+reg_2017 <- read.csv("raw-data/2017-01-01.csv", skip = 4) %>% 
   clean_names() %>% 
   filter(date_period == "43847") %>% 
   head(15) %>% 
   mutate(year = 2017) %>% 
-  select(county, year, democratic, republican)
+  select(county, year, democratic, republican, total)
 
-reg_2018 <- read.csv("2018-01-01.csv", skip = 4) %>% 
+reg_2018 <- read.csv("raw-data/2018-01-01.csv", skip = 4) %>% 
   clean_names() %>% 
   filter(date_period == "43848") %>% 
   head(15) %>% 
   mutate(year = 2018) %>% 
-  select(county, year, democratic, republican)
+  select(county, year, democratic, republican, total)
 
-reg_2019 <- read.csv("2019-01-01.csv", skip = 5) %>% 
+reg_2019 <- read.csv("raw-data/2019-01-01.csv", skip = 5) %>% 
   clean_names() %>% 
   filter(date_period == "43849") %>% 
   head(15) %>% 
   mutate(year = 2019) %>% 
-  select(county, year, democratic, republican)
+  select(county, year, democratic, republican, total)
 
-reg_2020 <- read.csv("2020-01-21.csv", skip = 5) %>% 
+reg_2020 <- read.csv("raw-data/2020-01-21.csv", skip = 5) %>% 
   clean_names() %>% 
   filter(date_period == "43850") %>% 
   head(15) %>% 
   mutate(year = 2020) %>% 
-  select(county, year, democratic, republican)
+  select(county, year, democratic, republican, total)
 
 reg_2017_to_2020 <- reg_2017 %>% 
   full_join(reg_2018) %>% 
@@ -52,23 +56,137 @@ reg_2017_to_2020 <- reg_2017 %>%
   arrange(county) %>% 
   pivot_longer(names_to = "party",
                values_to = "registration",
-               cols = c(democratic:republican))
+               cols = c(democratic:republican)) %>% 
+  select(county, year, party, registration, total) %>% 
+  mutate(percentage = (registration / total) * 100)
 ```
 
 ```{r reg_plot}
 reg_plot <- function(x){
   reg_2017_to_2020 %>% 
     filter(county == x) %>% 
-    ggplot(aes(x = year, y = registration, color = party)) +
+    ggplot(aes(x = year, y = percentage, color = party)) +
     geom_line(show.legend = FALSE, size = 0.54) +
     scale_color_manual(values = c("blue", "red")) +
     labs(x = "Year",
          y = "Registration",
-         title = "Party Registration Figures",
+         title = "Party Registration Percentages",
          caption = "Source: Arizona Secretary of State") +
     theme_fivethirtyeight()
 }
 
-reg_plot("Pima")
+reg_plot("Maricopa")
 ```
+
+```{r turnout_data, echo=FALSE}
+read_fwf("https://azsos.gov/sites/default/files/6981.Pima_.Detail.txt",
+         fwf_cols(contest_ID = 4, choice_ID = 3,
+                  precinct_ID = 4, vote_total = 6,
+                  early_votes = 6, polling_place_votes = 6,
+                  provisional_votes = 6,
+                  party = 104, contest = 167,
+                  choice = 205, precint_desig = 207,
+                  precinct_name = 234, subjuris = 260,
+                  votes_allowed = 262, referendum = 264))
+```
+
+```{r map, echo=FALSE}
+
+racevars <- c(White = "B02001_002", 
+              Black = "B02001_003", 
+              Asian = "B02001_005",
+              Hispanic = "B03003_003",
+              Native_American = "B02001_004")
+
+county_map <- function(x){
+  get_acs(geography = "tract",
+                variables = racevars, 
+                year = 2018,
+                state = "AZ",
+                county = "print(x) County",
+                geometry = TRUE,
+                summary_var = "B02001_001") %>% 
+    mutate(Percent = 100 * (estimate / summary_est)) %>%
+    ggplot(aes(fill = Percent, color = Percent)) +
+    facet_wrap(~ variable) +
+    geom_sf() +
+    scale_fill_viridis_c(direction = -1) +
+    scale_color_viridis_c(direction = -1) +
+    labs(title = "Racial geography of Pima County, Arizona",
+         caption = "Source: American Community Survey 2014-2018") +
+    theme_void()
+}
+
+county_map("Pima")
+
+pima <- get_acs(geography = "tract",
+                variables = racevars, 
+                year = 2018,
+                state = "AZ",
+                county = "Pima County",
+                geometry = TRUE,
+                summary_var = "B02001_001")
+
+pima %>%
+  mutate(Percent = 100 * (estimate / summary_est)) %>%
+  ggplot(aes(fill = Percent, color = Percent)) +
+  facet_wrap(~ variable) +
+  geom_sf() +
+  scale_fill_viridis_c(direction = -1) +
+  scale_color_viridis_c(direction = -1) +
+  labs(title = "Racial geography of Pima County, Arizona",
+       caption = "Source: American Community Survey 2014-2018") +
+  theme_void()
+```
+
+```{r}
+load("raw-data/1976-2016-president.RData")
+
+x %>% 
+  filter(year == "2000" | year == "2004" | year == "2008" | year == "2012" | year == "2016") %>% 
+  filter(state == "Arizona")
+
+load("raw-data/countypres_2000-2016.Rdata")
+
+AZ_pres <- x %>% 
+  filter(state == "Arizona") %>% 
+  select(year, county, candidate, party, candidatevotes, totalvotes) %>% 
+  mutate(percentage = (candidatevotes / totalvotes) * 100)
+
+pres_vote_plot <- function(x){
+  AZ_pres %>% 
+  filter(county == x) %>% 
+  filter(party == "democrat" | party == "republican") %>% 
+  group_by(party) %>% 
+  ggplot(aes(x = year, y = percentage, color = party)) +
+    geom_line(show.legend = FALSE, size = 0.54) +
+    theme_fivethirtyeight() +
+    scale_color_manual(values = c("blue", "red")) +
+    scale_x_continuous(breaks = seq(2000, 2016, by = 4)) +
+    labs(x = "Year",
+         y = "Votes",
+         title = "Vote Percentage for Top-Ballot Candidates",
+         subtitle = "_____ County, Arizona",
+         caption = "Source: MIT Election Data + Science Lab")
+}
+```
+
+```{r plots, echo=FALSE}
+pres_vote_plot("Apache")
+reg_plot("Apache")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
