@@ -1,0 +1,121 @@
+﻿year,county,office,candidate,party,candidatevotes,totalvotes
+2006,Apache,Senate,Jim Pederson,democrat,11402,18763
+2006,Apache,Senate,Jon Kyl,republican,6530,18763
+2006,Cochise,Senate,Jim Pederson,democrat,14849,36345
+2006,Cochise,Senate,Jon Kyl,republican,20194,36345
+2006,Coconino,Senate,Jim Pederson,democrat,20610,38062
+2006,Coconino,Senate,Jon Kyl,republican,16003,38062
+2006,Gila,Senate,Jim Pederson,democrat,6643,16688
+2006,Gila,Senate,Jon Kyl,republican,9512,16688
+2006,Graham,Senate,Jim Pederson,democrat,2194,7837
+2006,Graham,Senate,Jon Kyl,republican,5127,7837
+2006,Greenlee,Senate,Jim Pederson,democrat,942,2129
+2006,Greenlee,Senate,Jon Kyl,republican,1068,2129
+2006,La Paz,Senate,Jim Pederson,democrat,1457,3833
+2006,La Paz,Senate,Jon Kyl,republican,2203,3833
+2006,Maricopa,Senate,Jim Pederson,democrat,364661,883119
+2006,Maricopa,Senate,Jon Kyl,republican,491721,883119
+2006,Mohave,Senate,Jim Pederson,democrat,16998,45944
+2006,Mohave,Senate,Jon Kyl,republican,26964,45944
+2006,Navajo,Senate,Jim Pederson,democrat,11785,26663
+2006,Navajo,Senate,Jon Kyl,republican,13927,26663
+2006,Pima,Senate,Jim Pederson,democrat,144275,281202
+2006,Pima,Senate,Jon Kyl,republican,128987,281202
+2006,Pinal,Senate,Jim Pederson,democrat,24790,57005
+2006,Pinal,Senate,Jon Kyl,republican,30379,57005
+2006,Santa Cruz,Senate,Jim Pederson,democrat,4892,8156
+2006,Santa Cruz,Senate,Jon Kyl,republican,3067,8156
+2006,Yavapai,Senate,Jim Pederson,democrat,26340,72408
+2006,Yavapai,Senate,Jon Kyl,republican,43219,72408
+2006,Yuma,Senate,Jim Pederson,democrat,12303,28628
+2006,Yuma,Senate,Jon Kyl,republican,15497,28628
+2010,Apache,Senate,Rodney Glassman,democrat,11785,20556
+2010,Apache,Senate,John McCain,republican,7371,20556
+2010,Cochise,Senate,Rodney Glassman,democrat,13119,39615
+2010,Cochise,Senate,John McCain,republican,23445,39615
+2010,Coconino,Senate,Rodney Glassman,democrat,17164,38624
+2010,Coconino,Senate,John McCain,republican,18995,38624
+2010,Gila,Senate,Rodney Glassman,democrat,4858,17700
+2010,Gila,Senate,John McCain,republican,11500,17700
+2010,Graham,Senate,Rodney Glassman,democrat,2194,9053
+2010,Graham,Senate,John McCain,republican,6223,9053
+2010,Greenlee,Senate,Rodney Glassman,democrat,947,2418
+2010,Greenlee,Senate,John McCain,republican,1321,2418
+2010,La Paz,Senate,Rodney Glassman,democrat,1085,4463
+2010,La Paz,Senate,John McCain,republican,3003,4463
+2010,Maricopa,Senate,Rodney Glassman,democrat,319012,979966
+2010,Maricopa,Senate,John McCain,republican,599068,979966
+2010,Mohave,Senate,Rodney Glassman,democrat,12302,53059
+2010,Mohave,Senate,John McCain,republican,36367,53059
+2010,Navajo,Senate,Rodney Glassman,democrat,10737,29223
+2010,Navajo,Senate,John McCain,republican,16157,29223
+2010,Pima,Senate,Rodney Glassman,democrat,134296,311745
+2010,Pima,Senate,John McCain,republican,158879,311745
+2010,Pinal,Senate,Rodney Glassman,democrat,24856,77798
+2010,Pinal,Senate,John McCain,republican,47850,77798
+2010,Santa Cruz,Senate,Rodney Glassman,democrat,5710,9894
+2010,Santa Cruz,Senate,John McCain,republican,3693,9894
+2010,Yavapai,Senate,Rodney Glassman,democrat,21636,80263
+2010,Yavapai,Senate,John McCain,republican,52093,80263
+2010,Yuma,Senate,Rodney Glassman,democrat,12310,33837
+2010,Yuma,Senate,John McCain,republican,19650,33837
+2014,Apache,Governor,Fred DuVal,democrat,13562,20584
+2014,Apache,Governor,Doug Ducey,republican,5871,20584
+2014,Cochise,Governor,Fred DuVal,democrat,12709,36461
+2014,Cochise,Governor,Doug Ducey,republican,21662,36461
+2014,Coconino,Governor,Fred DuVal,democrat,20212,73400
+2014,Coconino,Governor,Doug Ducey,republican,14528,73400
+2014,Gila,Governor,Fred DuVal,democrat,5253,15839
+2014,Gila,Governor,Doug Ducey,republican,9610,15839
+2014,Graham,Governor,Fred DuVal,democrat,1919,7266
+2014,Graham,Governor,Doug Ducey,republican,4985,7266
+2014,Greenlee,Governor,Fred DuVal,democrat,792,1921
+2014,Greenlee,Governor,Doug Ducey,republican,995,1921
+2014,La Paz,Governor,Fred DuVal,democrat,846,3484
+2014,La Paz,Governor,Doug Ducey,republican,2388,3484
+2014,Maricopa,Governor,Fred DuVal,democrat,346879,857778
+2014,Maricopa,Governor,Doug Ducey,republican,469200,857778
+2014,Mohave,Governor,Fred DuVal,democrat,10662,46675
+2014,Mohave,Governor,Doug Ducey,republican,33150,46675
+2014,Navajo,Governor,Fred DuVal,democrat,12128,27349
+2014,Navajo,Governor,Doug Ducey,republican,13569,27349
+2014,Pima,Governor,Fred DuVal,democrat,136302,270670
+2014,Pima,Governor,Doug Ducey,republican,122966,270670
+2014,Pinal,Governor,Fred DuVal,democrat,26131,71473
+2014,Pinal,Governor,Doug Ducey,republican,41313,71473
+2014,Santa Cruz,Governor,Fred DuVal,democrat,5819,9324
+2014,Santa Cruz,Governor,Doug Ducey,republican,3175,9324
+2014,Yavapai,Governor,Fred DuVal,democrat,23210,74154
+2014,Yavapai,Governor,Doug Ducey,republican,46806,74154
+2014,Yuma,Governor,Fred DuVal,democrat,10497,26499
+2014,Yuma,Governor,Doug Ducey,republican,14844,26499
+2018,Apache,Senate,Kyrsten Sinema,democrat,16298,25069
+2018,Apache,Senate,Martha McSally,republican,7810,25069
+2018,Cochise,Senate,Kyrsten Sinema,democrat,17383,45524
+2018,Cochise,Senate,Martha McSally,republican,26929,45524
+2018,Coconino,Senate,Kyrsten Sinema,democrat,34240,55246
+2018,Coconino,Senate,Martha McSally,republican,19249,55246
+2018,Gila,Senate,Kyrsten Sinema,democrat,7643,20497
+2018,Gila,Senate,Martha McSally,republican,12180,20497
+2018,Graham,Senate,Kyrsten Sinema,democrat,3368,10601
+2018,Graham,Senate,Martha McSally,republican,6870,10601
+2018,Greenlee,Senate,Kyrsten Sinema,democrat,1042,2566
+2018,Greenlee,Senate,Martha McSally,republican,1416,2566
+2018,La Paz,Senate,Kyrsten Sinema,democrat,1609,5073
+2018,La Paz,Senate,Martha McSally,republican,3265,5073
+2018,Maricopa,Senate,Kyrsten Sinema,democrat,732761,1437637
+2018,Maricopa,Senate,Martha McSally,republican,672505,1437637
+2018,Mohave,Senate,Kyrsten Sinema,democrat,19214,71450
+2018,Mohave,Senate,Martha McSally,republican,50209,71450
+2018,Navajo,Senate,Kyrsten Sinema,democrat,16624,36629
+2018,Navajo,Senate,Martha McSally,republican,18767,36629
+2018,Pima,Senate,Kyrsten Sinema,democrat,221242,390502
+2018,Pima,Senate,Martha McSally,republican,160550,390502
+2018,Pinal,Senate,Kyrsten Sinema,democrat,50395,117360
+2018,Pinal,Senate,Martha McSally,republican,63782,117360
+2018,Santa Cruz,Senate,Kyrsten Sinema,democrat,9241,13487
+2018,Santa Cruz,Senate,Martha McSally,republican,3828,13487
+2018,Yavapai,Senate,Kyrsten Sinema,democrat,40160,108338
+2018,Yavapai,Senate,Martha McSally,republican,65308,108338
+2018,Yuma,Senate,Kyrsten Sinema,democrat,19880,43763
+2018,Yuma,Senate,Martha McSally,republican,22532,43763
