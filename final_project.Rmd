@@ -19,6 +19,7 @@ library(ggthemes)
 library(tidycensus)
 census_api_key("bc6535753047a343a531d92be52cfa8b40d17182", install = TRUE, overwrite = TRUE)
 readRenviron("~/.Renviron")
+library(stringr)
 ```
 
 ```{r reg_data_cleaning, include=FALSE}
@@ -131,22 +132,6 @@ AZ_pres <- x %>%
   mutate(percentage = (candidatevotes / totalvotes) * 100) %>% 
   filter(party == "democrat" | party == "republican")
 
-pres_vote_plot <- function(x){
-  AZ_pres %>% 
-  filter(county == x) %>% 
-  group_by(party) %>% 
-  ggplot(aes(x = year, y = percentage, color = party)) +
-    geom_line(show.legend = FALSE, size = 0.54) +
-    theme_fivethirtyeight() +
-    scale_color_manual(values = c("blue", "red")) +
-    scale_x_continuous(breaks = seq(2000, 2016, by = 4)) +
-    labs(x = "Year",
-         y = "Votes",
-         title = "Vote Percentage for Top-Ballot Candidates",
-         subtitle = "_____ County, Arizona",
-         caption = "Source: MIT Election Data + Science Lab")
-}
-
 AZtopballot <- read.csv("raw-data/azcountytopballot_2006-2018.csv") %>% 
   clean_names() %>% 
   mutate(percentage = (candidatevotes / totalvotes) * 100)
@@ -196,6 +181,64 @@ reg_plot("Pima")
 vote_plot("Pima")
 ```
 
+```{r}
+race2010 <- read_csv("raw-data/ACSDP5Y2010.DP05_data_with_overlays_2020-04-24T142342.csv",
+                     col_types = cols("dp05_0066e" = col_double(),
+                                      "dp05_0066pe" = col_double())) %>% 
+  clean_names() %>% 
+  mutate(year = 2010) %>% 
+  mutate(county = word(name), start = 1L, end = start, sep = fixed(" ")) %>%
+  mutate(hisp_pop = dp05_0066e) %>% 
+  mutate(hisp_perc = dp05_0066pe) %>%
+  select(county, year, hisp_pop, hisp_perc)
+
+race2012 <- read_csv("raw-data/ACSDP5Y2012.DP05_data_with_overlays_2020-04-24T141301.csv",
+                     col_types = cols("dp05_0066e" = col_double(),
+                                      "dp05_0066pe" = col_double())) %>% 
+  clean_names() %>% 
+  mutate(year = 2012) %>% 
+  mutate(county = word(name), start = 1L, end = start, sep = fixed(" ")) %>%
+  mutate(hisp_pop = dp05_0066e) %>% 
+  mutate(hisp_perc = dp05_0066pe) %>%
+  select(county, year, hisp_pop, hisp_perc)
+
+race2014 <- read_csv("raw-data/ACSDP5Y2014.DP05_data_with_overlays_2020-04-24T140611.csv",
+                     col_types = cols("dp05_0066e" = col_double(),
+                                      "dp05_0066pe" = col_double())) %>% 
+  clean_names() %>% 
+  mutate(year = 2014) %>% 
+  mutate(county = word(name), start = 1L, end = start, sep = fixed(" ")) %>%
+  mutate(hisp_pop = dp05_0066e) %>% 
+  mutate(hisp_perc = dp05_0066pe) %>%
+  select(county, year, hisp_pop, hisp_perc)
+
+race2016 <- read_csv("raw-data/ACSDP5Y2016.DP05_data_with_overlays_2020-04-24T125340.csv",
+                     col_types = cols("dp05_0066e" = col_double(),
+                                      "dp05_0066pe" = col_double())) %>% 
+  clean_names() %>% 
+  mutate(year = 2016) %>% 
+  mutate(county = word(name), start = 1L, end = start, sep = fixed(" ")) %>%
+  mutate(hisp_pop = dp05_0066e) %>% 
+  mutate(hisp_perc = dp05_0066pe) %>%
+  select(county, year, hisp_pop, hisp_perc)
+
+race2018 <- read_csv("raw-data/ACSDP5Y2018.DP05_data_with_overlays_2020-04-24T123622.csv",
+                     col_types = cols("dp05_0071e" = col_double(),
+                                      "dp05_0071pe" = col_double())) %>% 
+  clean_names() %>% 
+  mutate(year = 2018) %>% 
+  mutate(county = word(name), start = 1L, end = start, sep = fixed(" ")) %>%
+  mutate(hisp_pop = dp05_0071e) %>% 
+  mutate(hisp_perc = dp05_0071pe) %>% 
+  select(county, year, hisp_pop, hisp_perc)
+
+race2010 %>%
+  full_join(race2012, by = c("county", "year", "hisp_pop", "hisp_perc")) %>% 
+  full_join(race2014, by = c("county", "year", "hisp_pop", "hisp_perc")) %>% 
+  full_join(race2016, by = c("county", "year", "hisp_pop", "hisp_perc")) %>% 
+  full_join(race2018, by = c("county", "year", "hisp_pop", "hisp_perc")) %>% 
+  arrange(county)
+```
 
 
 
