@@ -20,6 +20,8 @@ library(tidycensus)
 census_api_key("bc6535753047a343a531d92be52cfa8b40d17182", install = TRUE, overwrite = TRUE)
 readRenviron("~/.Renviron")
 library(stringr)
+library(gganimate)
+library(gt)
 ```
 
 ```{r reg_data_cleaning, include=FALSE}
@@ -88,9 +90,10 @@ reg_2004_to_2018 <- reg_2004 %>%
   full_join(reg_2016) %>%
   full_join(reg_2018) %>%
   arrange(county) %>% 
-  pivot_longer(names_to = "party",
+  pivot_longer(names_to = "party_old",
                values_to = "registration",
                cols = c(democratic:republican)) %>% 
+  mutate(party = ifelse(party_old == "democratic", "democrat", "republican")) %>% 
   select(county, year, party, registration, total) %>% 
   mutate(percentage = (registration / total) * 100)
 ```
@@ -142,52 +145,14 @@ AZ_elections_2004_2018 <- AZ_pres %>%
   filter(year > 2002)
 ```
 
-```{r plot_functions, include=FALSE}
-reg_plot <- function(x){
-  reg_2004_to_2018 %>% 
-    filter(county == x) %>% 
-    ggplot(aes(x = year, y = percentage, color = party)) +
-    geom_line(show.legend = FALSE, size = 0.54) +
-    scale_color_manual(values = c("blue", "red")) +
-    labs(x = "Year",
-         y = "Registration",
-         title = "Party Registration Percentages",
-         subtitle = "_____ County, Arizona",
-         caption = "Source: Arizona Secretary of State") +
-    theme_fivethirtyeight() +
-    scale_x_continuous(breaks = seq(2004, 2018, by = 2))
-}
-
-vote_plot <- function(x){
-  AZ_elections_2004_2018 %>% 
-  filter(county == x) %>% 
-  group_by(party) %>% 
-  ggplot(aes(x = year, y = percentage, color = party)) +
-    geom_line(show.legend = FALSE, size = 0.54) +
-    theme_fivethirtyeight() +
-    scale_color_manual(values = c("blue", "red")) +
-    scale_x_continuous(breaks = seq(2004, 2018, by = 2)) +
-    labs(x = "Year",
-         y = "Votes",
-         title = "Vote Percentage for Top-Ballot Candidates",
-         subtitle = "_____ County, Arizona",
-         caption = "Sources: MIT Election Data + Science Lab,
-                    Arizona Secretary of State")
-}
-```
-
-```{r plots, echo=FALSE}
-reg_plot("Pima")
-vote_plot("Pima")
-```
-
-```{r}
+```{r race_data, echo=FALSE}
 race2010 <- read_csv("raw-data/ACSDP5Y2010.DP05_data_with_overlays_2020-04-24T142342.csv",
                      col_types = cols("dp05_0066e" = col_double(),
                                       "dp05_0066pe" = col_double())) %>% 
   clean_names() %>% 
   mutate(year = 2010) %>% 
-  mutate(county = word(name), start = 1L, end = start, sep = fixed(" ")) %>%
+  filter(name != "Arizona") %>% 
+  mutate(county = word(name, start = 1L, end = -3, sep = fixed(" "))) %>%
   mutate(hisp_pop = dp05_0066e) %>% 
   mutate(hisp_perc = dp05_0066pe) %>%
   select(county, year, hisp_pop, hisp_perc)
@@ -197,7 +162,8 @@ race2012 <- read_csv("raw-data/ACSDP5Y2012.DP05_data_with_overlays_2020-04-24T14
                                       "dp05_0066pe" = col_double())) %>% 
   clean_names() %>% 
   mutate(year = 2012) %>% 
-  mutate(county = word(name), start = 1L, end = start, sep = fixed(" ")) %>%
+  filter(name != "Arizona") %>% 
+  mutate(county = word(name, start = 1L, end = -3, sep = fixed(" "))) %>%
   mutate(hisp_pop = dp05_0066e) %>% 
   mutate(hisp_perc = dp05_0066pe) %>%
   select(county, year, hisp_pop, hisp_perc)
@@ -207,7 +173,7 @@ race2014 <- read_csv("raw-data/ACSDP5Y2014.DP05_data_with_overlays_2020-04-24T14
                                       "dp05_0066pe" = col_double())) %>% 
   clean_names() %>% 
   mutate(year = 2014) %>% 
-  mutate(county = word(name), start = 1L, end = start, sep = fixed(" ")) %>%
+  mutate(county = word(name, start = 1L, end = -3, sep = fixed(" "))) %>%
   mutate(hisp_pop = dp05_0066e) %>% 
   mutate(hisp_perc = dp05_0066pe) %>%
   select(county, year, hisp_pop, hisp_perc)
@@ -217,7 +183,7 @@ race2016 <- read_csv("raw-data/ACSDP5Y2016.DP05_data_with_overlays_2020-04-24T12
                                       "dp05_0066pe" = col_double())) %>% 
   clean_names() %>% 
   mutate(year = 2016) %>% 
-  mutate(county = word(name), start = 1L, end = start, sep = fixed(" ")) %>%
+  mutate(county = word(name, start = 1L, end = -3, sep = fixed(" "))) %>%
   mutate(hisp_pop = dp05_0066e) %>% 
   mutate(hisp_perc = dp05_0066pe) %>%
   select(county, year, hisp_pop, hisp_perc)
@@ -227,12 +193,12 @@ race2018 <- read_csv("raw-data/ACSDP5Y2018.DP05_data_with_overlays_2020-04-24T12
                                       "dp05_0071pe" = col_double())) %>% 
   clean_names() %>% 
   mutate(year = 2018) %>% 
-  mutate(county = word(name), start = 1L, end = start, sep = fixed(" ")) %>%
+  mutate(county = word(name, start = 1L, end = -3, sep = fixed(" "))) %>%
   mutate(hisp_pop = dp05_0071e) %>% 
   mutate(hisp_perc = dp05_0071pe) %>% 
   select(county, year, hisp_pop, hisp_perc)
 
-race2010 %>%
+race <- race2010 %>%
   full_join(race2012, by = c("county", "year", "hisp_pop", "hisp_perc")) %>% 
   full_join(race2014, by = c("county", "year", "hisp_pop", "hisp_perc")) %>% 
   full_join(race2016, by = c("county", "year", "hisp_pop", "hisp_perc")) %>% 
@@ -240,7 +206,152 @@ race2010 %>%
   arrange(county)
 ```
 
+```{r combining_data, echo=FALSE}
+data <- race %>% 
+  left_join(AZ_elections_2004_2018, by = c("year", "county")) %>% 
+  left_join(reg_2004_to_2018, by = c("year", "county", "party"),
+            suffix = c("_votes", "_reg"))
 
+saveRDS(data, file = "data_4-24.rds")
+
+reg_plot <- function(x){
+  data %>% 
+    filter(county == x) %>% 
+    ggplot(aes(x = year, y = percentage_reg, color = party)) +
+    geom_line(show.legend = FALSE, size = 0.54) +
+    scale_color_manual(values = c("blue", "red")) +
+    labs(x = "Year",
+         y = "Registration",
+         title = "Party Registration Percentages",
+         subtitle = "Selected County in Arizona",
+         caption = "Sources: MIT Election Data + Science Lab,
+                    Arizona Secretary of State,
+                    U.S. Census Bureau") +
+    theme_fivethirtyeight() +
+    scale_x_continuous(breaks = seq(2010, 2018, by = 2))
+}
+
+vote_plot <- function(x){
+  data %>% 
+  filter(county == x) %>% 
+  group_by(party) %>% 
+  ggplot(aes(x = year, y = percentage_votes, color = party)) +
+    geom_line(show.legend = FALSE, size = 0.54) +
+    theme_fivethirtyeight() +
+    scale_color_manual(values = c("blue", "red")) +
+    scale_x_continuous(breaks = seq(2010, 2018, by = 2)) +
+    labs(x = "Year",
+         y = "Votes",
+         title = "Vote Percentage for Top-Ballot Candidates",
+         subtitle = "Selected County in Arizona",
+         caption = "Sources: MIT Election Data + Science Lab,
+                    Arizona Secretary of State,
+                    U.S. Census Bureau")
+}
+```
+
+```{r}
+data %>% 
+  filter(year == 2010 | year == 2018) %>% 
+  filter(party == "democrat") %>% 
+  select(county, year, hisp_pop) %>% 
+  pivot_wider(names_from = year, values_from = hisp_pop, names_prefix = "pop_") %>% 
+  group_by(county) %>% 
+  summarize(perc_change_hisp = ((pop_2018 - pop_2010) / pop_2010) * 100) %>% 
+  ggplot(aes(x = reorder(county, perc_change_hisp), y = perc_change_hisp)) +
+    geom_col() +
+    coord_flip()
+
+data %>% 
+  filter(year == 2010 | year == 2018) %>% 
+  filter(party == "democrat") %>% 
+  select(county, year, hisp_perc) %>% 
+  pivot_wider(names_from = year, values_from = hisp_perc, names_prefix = "perc_") %>% 
+  group_by(county) %>% 
+  summarize(perc_change_hisp_perc = perc_2018 - perc_2010) %>% 
+  ggplot(aes(x = reorder(county, perc_change_hisp_perc), y = perc_change_hisp_perc)) +
+    geom_col() +
+    theme_classic() +
+    labs(x = NULL,
+         y = "Change in Hispanic Percentage of Population",
+         title = "Hispanic Populations Have Grown Faster \n Than County Populations Overall",
+         subtitle = "Betweeen 2010 and 2018") +
+    coord_flip()
+```
+
+```{r}
+data %>%
+  select(county, year, party, registration) %>% 
+  pivot_wider(names_from = party, values_from = registration) %>% 
+  mutate(difference = democrat - republican) %>% 
+  select(county, year, difference) %>% 
+  pivot_wider(names_from = year, values_from = difference, names_prefix = "diff_") %>% 
+  mutate(diff_from_2010 = diff_2012 - diff_2010,
+         diff_from_2012 = diff_2014 - diff_2012,
+         diff_from_2014 = diff_2016 - diff_2014,
+         diff_from_2016 = diff_2018 - diff_2016) %>%
+  select(county, diff_from_2010, diff_from_2012, diff_from_2014, diff_from_2016) %>% 
+  pivot_longer(diff_from_2010:diff_from_2016, names_to = "year", names_prefix = "diff_from_", values_to = "difference") %>% 
+  group_by(year) %>% 
+  ggplot(aes(x = reorder(county, difference), y = difference, group = year, fill = difference < 0)) +
+    geom_col(show.legend = FALSE) +
+    theme_classic() +
+    labs(x = NULL,
+         y = "Registration Gains Relative to Other Party",
+         title = "Where Has Each Party Been Improving?",
+         subtitle = "Two-Year Periods Between 2010 and 2018") +
+    coord_flip() +
+    scale_fill_manual(values = c("blue", "red")) +
+    transition_manual(year)
+``` 
+
+```{r}
+data %>% 
+    filter(year == 2012 | year == 2018) %>% 
+    select(county, year, party, registration) %>% 
+    pivot_wider(names_from = party, values_from = registration) %>% 
+    mutate(difference = democrat - republican) %>% 
+    select(county, year, difference) %>% 
+    pivot_wider(names_from = year, values_from = difference, names_prefix = "diff_") %>% 
+    mutate(diff_change = diff_2018 - diff_2012) %>%
+    ggplot(aes(x = reorder(county, diff_change), y = diff_change, fill = diff_change < 0)) +
+    geom_col(show.legend = FALSE) +
+    theme_classic() +
+    labs(x = NULL,
+         y = "Registration Gains Relative to Other Party",
+         title = "Where Has Each Party Improved?",
+         subtitle = "Between 2012 and 2018") +
+    coord_flip() +
+    scale_fill_manual(values = c("blue", "red"))
+```
+
+```{r}
+perc_change_votes <- data %>% 
+  filter(year == 2010 | year == 2018) %>% 
+  filter(party == "democrat") %>% 
+  select(county, year, percentage_votes) %>% 
+  pivot_wider(names_from = "year", values_from = "percentage_votes", names_prefix = "votes_") %>% 
+  mutate(perc_change_votes = votes_2018 - votes_2010) %>% 
+  select(county, perc_change_votes)
+
+data %>% 
+  filter(year == 2010 | year == 2018) %>% 
+  filter(party == "democrat") %>% 
+  select(county, year, hisp_perc) %>% 
+  pivot_wider(names_from = "year", values_from = "hisp_perc", names_prefix = "hisp_perc_") %>% 
+  mutate(perc_change_hisp = hisp_perc_2018 - hisp_perc_2010) %>% 
+  select(county, perc_change_hisp) %>% 
+  full_join(perc_change_votes, by = "county") %>%
+    gt() %>% 
+      tab_header(title = "Effect on Change in Hispanic Population on Democratic Vote Share",
+                 subtitle = "From 2010 to 2018") %>% 
+      tab_spanner(label = "Correlation = -0.058", columns = TRUE) %>% 
+      cols_align(align = "center", columns = TRUE) %>% 
+      fmt_number(columns = vars(perc_change_votes), decimals = 2) %>% 
+      cols_label(county = "County",
+                 perc_change_hisp = "Change in Hispanic Share of Population (%)",
+                 perc_change_votes = "Change in Democratic Vote Share (%)")
+```
 
 
 
