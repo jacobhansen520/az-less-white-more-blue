@@ -22,6 +22,7 @@ readRenviron("~/.Renviron")
 library(stringr)
 library(gganimate)
 library(gt)
+library(plotly)
 ```
 
 ```{r reg_data_cleaning, include=FALSE}
@@ -96,34 +97,6 @@ reg_2004_to_2018 <- reg_2004 %>%
   mutate(party = ifelse(party_old == "democratic", "democrat", "republican")) %>% 
   select(county, year, party, registration, total) %>% 
   mutate(percentage = (registration / total) * 100)
-```
-
-```{r map, include=FALSE}
-
-racevars <- c(White = "B02001_002", 
-              Black = "B02001_003", 
-              Asian = "B02001_005",
-              Hispanic = "B03003_003",
-              Native_American = "B02001_004")
-
-county_map <- function(x){
-  get_acs(geography = "tract",
-                variables = racevars, 
-                year = 2018,
-                state = "AZ",
-                county = x,
-                geometry = TRUE,
-                summary_var = "B02001_001") %>% 
-    mutate(Percent = 100 * (estimate / summary_est)) %>%
-    ggplot(aes(fill = Percent, color = Percent)) +
-    facet_wrap(~ variable) +
-    geom_sf() +
-    scale_fill_viridis_c(direction = -1) +
-    scale_color_viridis_c(direction = -1) +
-    labs(title = "Racial geography of Pima County, Arizona",
-         caption = "Source: American Community Survey 2014-2018") +
-    theme_void()
-}
 ```
 
 ```{r vote_data_cleaning, include=FALSE}
@@ -237,7 +210,7 @@ vote_plot <- function(x){
   group_by(party) %>% 
   ggplot(aes(x = year, y = percentage_votes, color = party)) +
     geom_line(show.legend = FALSE, size = 0.54) +
-    theme_fivethirtyeight() +
+    theme_hc() +
     scale_color_manual(values = c("blue", "red")) +
     scale_x_continuous(breaks = seq(2010, 2018, by = 2)) +
     labs(x = "Year",
@@ -248,6 +221,8 @@ vote_plot <- function(x){
                     Arizona Secretary of State,
                     U.S. Census Bureau")
 }
+
+vote_plot("Pima")
 ```
 
 ```{r}
@@ -270,7 +245,7 @@ data %>%
   group_by(county) %>% 
   summarize(perc_change_hisp_perc = perc_2018 - perc_2010) %>% 
   ggplot(aes(x = reorder(county, perc_change_hisp_perc), y = perc_change_hisp_perc)) +
-    geom_col() +
+    geom_col(fill = "navyblue") +
     theme_classic() +
     labs(x = NULL,
          y = "Change in Hispanic Percentage of Population",
@@ -353,6 +328,22 @@ data %>%
                  perc_change_votes = "Change in Democratic Vote Share (%)")
 ```
 
+```{r map, echo=FALSE}
+
+arizona <- get_acs(geography = "county",
+                      state = "AZ",
+                      variables = "DP05_0071PE",
+                      year = 2018,
+                      geometry = TRUE)
+
+arizona %>% 
+  ggplot(aes(fill = estimate)) +
+  geom_sf() +
+  theme_void() +
+  scale_fill_viridis_c(direction = -1, option = "plasma") +
+  labs(title = "Hispanic or Latinx Percent of Arizona Population",
+       fill = "Percentage")
+```
 
 
 

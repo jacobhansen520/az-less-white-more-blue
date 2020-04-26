@@ -16,6 +16,15 @@ library(ggplot2)
 library(ggthemes)
 library(stringr)
 library(gt)
+library(plotly)
+library(tidycensus)
+census_api_key("bc6535753047a343a531d92be52cfa8b40d17182", install = TRUE, overwrite = TRUE)
+
+arizona <- get_acs(geography = "county",
+                   state = "AZ",
+                   variables = "DP05_0071PE",
+                   year = 2018,
+                   geometry = TRUE)
 
 data <- read_rds("data_4-24.rds")
 
@@ -26,31 +35,30 @@ ui <- fluidPage(
     
     navbarPage("",
             tabPanel(h4("Voter Registration in Arizona by County"),
-                sidebarPanel(
-                    selectInput("county",
-                                "Select a County:",
-                                choices = c("Apache",
-                                            "Cochise",
-                                            "Coconino",
-                                            "Gila",
-                                            "Graham",
-                                            "Greenlee",
-                                            "Maricopa",
-                                            "Mohave",
-                                            "Navajo",
-                                            "Pima",
-                                            "Pinal",
-                                            "Santa Cruz",
-                                            "Yavapai",
-                                            "Yuma"),
-                                multiple = FALSE)),
-              
-              mainPanel(plotOutput("reg_plot"), br(),
-                        plotOutput("vote_plot"))),
+                fixedRow(column(3, verticalLayout(
+                                      selectInput("county",
+                                                   "Select a County:",
+                                                   choices = c("Apache",
+                                                               "Cochise",
+                                                               "Coconino",
+                                                               "Gila",
+                                                               "Graham",
+                                                               "Greenlee",
+                                                               "Maricopa",
+                                                               "Mohave",
+                                                               "Navajo",
+                                                               "Pima",
+                                                               "Pinal",
+                                                               "Santa Cruz",
+                                                               "Yavapai",
+                                                               "Yuma"),
+                                                    multiple = FALSE), br(),
+                                      plotOutput("reg_plot", width = "450", height = "330"), br(),
+                                      plotOutput("vote_plot", width = "450", height = "330"))), br(),
+                         column(5, plotlyOutput("arizona_pop_perc", height = "750")), br(),
+                         column(4, plotOutput("perc_hisp_change_perc", height = "750")))), 
             
-            tabPanel(h4("Demographic Changes in Arizona by County"),
-              splitLayout(plotOutput("perc_hisp_change_perc"), br(),
-                          plotOutput("reg_changes_county"))),
+            tabPanel(h4("Demographic Changes in Arizona by County")),
             
             tabPanel(h4("Is Increased Hispanic Population Correlated with Increased Democratic Vote Share?"),
               gt_output("correlation")),
@@ -66,7 +74,7 @@ server <- function(input, output) {
                   filter(county == input$county) %>% 
                   ggplot(aes(x = year, y = percentage_reg, color = party)) +
                   geom_line(show.legend = FALSE, size = 1.0) +
-                  scale_color_manual(values = c("blue", "red")) +
+                  scale_color_manual(values = c("blue3", "red2")) +
                   labs(x = "Year",
                        y = "Registration",
                        title = "Party Registration Percentages",
@@ -74,7 +82,7 @@ server <- function(input, output) {
                        caption = "Sources: MIT Election Data + Science Lab,
                     Arizona Secretary of State,
                     U.S. Census Bureau") +
-                  theme_fivethirtyeight() +
+                  theme_hc() +
                   scale_x_continuous(breaks = seq(2010, 2018, by = 2))
     })
         
@@ -83,16 +91,27 @@ server <- function(input, output) {
                   filter(county == input$county) %>%
                   ggplot(aes(x = year, y = percentage_votes, color = party)) +
                   geom_line(show.legend = FALSE, size = 1.0) +
-                  scale_color_manual(values = c("blue", "red")) +
+                  scale_color_manual(values = c("blue3", "red2")) +
                   labs(x = "Year",
-                       y = "Votes",
+                       y = "Percentage of Vote",
                        title = "Vote Percentage for Top-Ballot Candidates",
                        subtitle = "Selected County in Arizona",
                        caption = "Sources: MIT Election Data + Science Lab,
                     Arizona Secretary of State,
                     U.S. Census Bureau") +
-                  theme_fivethirtyeight() +
+                  theme_hc() +
                   scale_x_continuous(breaks = seq(2010, 2018, by = 2))
+    })
+    
+    output$arizona_pop_perc <- renderPlotly({
+          ggplotly(ggplot(data = arizona, aes(text = paste(NAME, "<br>",
+                                              "Hispanic Percentage:", estimate,"%"))) +
+                           geom_sf(aes(fill = estimate)) +
+                           theme_map() +
+                           scale_fill_viridis_c(direction = -1, option = "plasma") +
+                           labs(title = "Hispanic or Latinx Percent of Arizona Population",
+                                fill = "Percentage"),
+                  tooltip = c("text"))
     })
     
     output$perc_hisp_change_perc <- renderPlot({
@@ -104,7 +123,7 @@ server <- function(input, output) {
                   group_by(county) %>% 
                   summarize(perc_change_hisp_perc = perc_2018 - perc_2010) %>% 
                   ggplot(aes(x = reorder(county, perc_change_hisp_perc), y = perc_change_hisp_perc)) +
-                  geom_col() +
+                  geom_col(fill = "navyblue") +
                   theme_classic() +
                   labs(x = NULL,
                        y = "Change in Hispanic Percentage of Population",
@@ -129,7 +148,7 @@ server <- function(input, output) {
                        title = "Where Has Each Party Improved?",
                        subtitle = "Between 2010 and 2018") +
                   coord_flip() +
-                  scale_fill_manual(values = c("blue", "red"))
+                  scale_fill_manual(values = c("blue3", "red2"))
     })
     
     output$correlation <- render_gt({
