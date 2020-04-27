@@ -1,0 +1,12 @@
+name: az_less_white_more_blue
+title: az_less_white_more_blue
+username:
+account: jacobhansen
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 2192483
+bundleId: 3070135
+url: https://jacobhansen.shinyapps.io/az_less_white_more_blue/
+when: 1587965973.21414
+asMultiple: FALSE
+asStatic: FALSE

@@ -23,6 +23,7 @@ library(stringr)
 library(gganimate)
 library(gt)
 library(plotly)
+library(broom)
 ```
 
 ```{r reg_data_cleaning, include=FALSE}
@@ -121,61 +122,71 @@ AZ_elections_2004_2018 <- AZ_pres %>%
 ```{r race_data, echo=FALSE}
 race2010 <- read_csv("raw-data/ACSDP5Y2010.DP05_data_with_overlays_2020-04-24T142342.csv",
                      col_types = cols("dp05_0066e" = col_double(),
-                                      "dp05_0066pe" = col_double())) %>% 
+                                      "dp05_0066pe" = col_double(),
+                                      "dp05_0001e" = col_double())) %>% 
   clean_names() %>% 
   mutate(year = 2010) %>% 
   filter(name != "Arizona") %>% 
   mutate(county = word(name, start = 1L, end = -3, sep = fixed(" "))) %>%
   mutate(hisp_pop = dp05_0066e) %>% 
   mutate(hisp_perc = dp05_0066pe) %>%
-  select(county, year, hisp_pop, hisp_perc)
+  mutate(total_pop = dp05_0001e) %>% 
+  select(county, year, hisp_pop, hisp_perc, total_pop)
 
 race2012 <- read_csv("raw-data/ACSDP5Y2012.DP05_data_with_overlays_2020-04-24T141301.csv",
                      col_types = cols("dp05_0066e" = col_double(),
-                                      "dp05_0066pe" = col_double())) %>% 
+                                      "dp05_0066pe" = col_double(),
+                                      "dp05_0001e" = col_double())) %>% 
   clean_names() %>% 
   mutate(year = 2012) %>% 
   filter(name != "Arizona") %>% 
   mutate(county = word(name, start = 1L, end = -3, sep = fixed(" "))) %>%
   mutate(hisp_pop = dp05_0066e) %>% 
   mutate(hisp_perc = dp05_0066pe) %>%
-  select(county, year, hisp_pop, hisp_perc)
+  mutate(total_pop = dp05_0001e) %>% 
+  select(county, year, hisp_pop, hisp_perc, total_pop)
 
 race2014 <- read_csv("raw-data/ACSDP5Y2014.DP05_data_with_overlays_2020-04-24T140611.csv",
                      col_types = cols("dp05_0066e" = col_double(),
-                                      "dp05_0066pe" = col_double())) %>% 
+                                      "dp05_0066pe" = col_double(),
+                                      "dp05_0001e" = col_double())) %>% 
   clean_names() %>% 
   mutate(year = 2014) %>% 
   mutate(county = word(name, start = 1L, end = -3, sep = fixed(" "))) %>%
   mutate(hisp_pop = dp05_0066e) %>% 
   mutate(hisp_perc = dp05_0066pe) %>%
-  select(county, year, hisp_pop, hisp_perc)
+  mutate(total_pop = dp05_0001e) %>% 
+  select(county, year, hisp_pop, hisp_perc, total_pop)
 
 race2016 <- read_csv("raw-data/ACSDP5Y2016.DP05_data_with_overlays_2020-04-24T125340.csv",
                      col_types = cols("dp05_0066e" = col_double(),
-                                      "dp05_0066pe" = col_double())) %>% 
+                                      "dp05_0066pe" = col_double(),
+                                      "dp05_0001e" = col_double())) %>% 
   clean_names() %>% 
   mutate(year = 2016) %>% 
   mutate(county = word(name, start = 1L, end = -3, sep = fixed(" "))) %>%
   mutate(hisp_pop = dp05_0066e) %>% 
   mutate(hisp_perc = dp05_0066pe) %>%
-  select(county, year, hisp_pop, hisp_perc)
+  mutate(total_pop = dp05_0001e) %>% 
+  select(county, year, hisp_pop, hisp_perc, total_pop)
 
 race2018 <- read_csv("raw-data/ACSDP5Y2018.DP05_data_with_overlays_2020-04-24T123622.csv",
                      col_types = cols("dp05_0071e" = col_double(),
-                                      "dp05_0071pe" = col_double())) %>% 
+                                      "dp05_0071pe" = col_double(),
+                                      "dp05_0001e" = col_double())) %>% 
   clean_names() %>% 
   mutate(year = 2018) %>% 
   mutate(county = word(name, start = 1L, end = -3, sep = fixed(" "))) %>%
   mutate(hisp_pop = dp05_0071e) %>% 
   mutate(hisp_perc = dp05_0071pe) %>% 
-  select(county, year, hisp_pop, hisp_perc)
+  mutate(total_pop = dp05_0001e) %>%
+  select(county, year, hisp_pop, hisp_perc, total_pop)
 
 race <- race2010 %>%
-  full_join(race2012, by = c("county", "year", "hisp_pop", "hisp_perc")) %>% 
-  full_join(race2014, by = c("county", "year", "hisp_pop", "hisp_perc")) %>% 
-  full_join(race2016, by = c("county", "year", "hisp_pop", "hisp_perc")) %>% 
-  full_join(race2018, by = c("county", "year", "hisp_pop", "hisp_perc")) %>% 
+  full_join(race2012, by = c("county", "year", "hisp_pop", "hisp_perc", "total_pop")) %>% 
+  full_join(race2014, by = c("county", "year", "hisp_pop", "hisp_perc", "total_pop")) %>% 
+  full_join(race2016, by = c("county", "year", "hisp_pop", "hisp_perc", "total_pop")) %>% 
+  full_join(race2018, by = c("county", "year", "hisp_pop", "hisp_perc", "total_pop")) %>% 
   arrange(county)
 ```
 
@@ -261,23 +272,23 @@ data %>%
   mutate(difference = democrat - republican) %>% 
   select(county, year, difference) %>% 
   pivot_wider(names_from = year, values_from = difference, names_prefix = "diff_") %>% 
-  mutate(diff_from_2010 = diff_2012 - diff_2010,
-         diff_from_2012 = diff_2014 - diff_2012,
-         diff_from_2014 = diff_2016 - diff_2014,
+  mutate(diff_from_2010 = diff_2018 - diff_2010,
+         diff_from_2012 = diff_2018 - diff_2012,
+         diff_from_2014 = diff_2018 - diff_2014,
          diff_from_2016 = diff_2018 - diff_2016) %>%
   select(county, diff_from_2010, diff_from_2012, diff_from_2014, diff_from_2016) %>% 
-  pivot_longer(diff_from_2010:diff_from_2016, names_to = "year", names_prefix = "diff_from_", values_to = "difference") %>% 
-  group_by(year) %>% 
-  ggplot(aes(x = reorder(county, difference), y = difference, group = year, fill = difference < 0)) +
+  pivot_longer(diff_from_2010:diff_from_2016, names_to = "year", values_to = "difference",
+               names_prefix = "diff_from_") %>% 
+  filter(year == "2016") %>% 
+  ggplot(aes(x = reorder(county, difference), y = difference, fill = difference < 0)) +
     geom_col(show.legend = FALSE) +
     theme_classic() +
     labs(x = NULL,
          y = "Registration Gains Relative to Other Party",
-         title = "Where Has Each Party Been Improving?",
-         subtitle = "Two-Year Periods Between 2010 and 2018") +
+         title = "Where Has Each Party Improved?",
+         subtitle = "Between 2012 and 2018") +
     coord_flip() +
-    scale_fill_manual(values = c("blue", "red")) +
-    transition_manual(year)
+    scale_fill_manual(values = c("blue3", "red2"))
 ``` 
 
 ```{r}
@@ -310,11 +321,11 @@ perc_change_votes <- data %>%
   select(county, perc_change_votes)
 
 data %>% 
-  filter(year == 2010 | year == 2018) %>% 
+  filter(year == 2010 | year == 2012) %>% 
   filter(party == "democrat") %>% 
   select(county, year, hisp_perc) %>% 
   pivot_wider(names_from = "year", values_from = "hisp_perc", names_prefix = "hisp_perc_") %>% 
-  mutate(perc_change_hisp = hisp_perc_2018 - hisp_perc_2010) %>% 
+  mutate(perc_change_hisp = hisp_perc_2012 - hisp_perc_2010) %>% 
   select(county, perc_change_hisp) %>% 
   full_join(perc_change_votes, by = "county") %>%
     gt() %>% 
@@ -344,6 +355,107 @@ arizona %>%
   labs(title = "Hispanic or Latinx Percent of Arizona Population",
        fill = "Percentage")
 ```
+
+```{r map_data, echo=FALSE}
+az_county_results <- data %>% 
+  select(county, year, party, percentage_votes) %>% 
+  pivot_wider(names_from = party, values_from = percentage_votes) %>% 
+  mutate(difference = democrat - republican) %>% 
+  mutate(county_full = paste(county, "County, Arizona")) %>% 
+  select(county_full, year, democrat, republican, difference)
+
+arizona_county_results_map <- arizona %>% 
+  full_join(az_county_results, by = c("NAME" = "county_full")) %>% 
+  mutate(democrat_rounded = round(democrat, digits = 2)) %>% 
+  mutate(republican_rounded = round(republican, digits = 2))
+```
+
+```{r correlations, echo=FALSE}
+y <- data %>% 
+  filter(party == "democrat") %>%
+  group_by(year) %>% 
+  summarize(total_hisp_pop = sum(hisp_pop), 
+            total_pop = sum(total_pop),
+            total_dem_votes = sum(candidatevotes),
+            total_votes = sum(totalvotes)) %>% 
+  mutate(hisp_perc_az = (total_hisp_pop / total_pop) * 100) %>% 
+  mutate(dem_perc_az = (total_dem_votes / total_votes) * 100) %>% 
+  mutate(county = "OVERALL") %>% 
+  select(county, year, hisp_perc_az, dem_perc_az)
+
+data %>% 
+  filter(party == "democrat") %>% 
+  full_join(y, by = c("county",
+                      "year",
+                      "hisp_perc" = "hisp_perc_az",
+                      "percentage_votes" = "dem_perc_az")) %>% 
+  group_by(county) %>% 
+  mutate(correlation = cor(hisp_perc, percentage_votes)) %>% 
+  filter(year == 2018) %>% 
+  select(county, correlation) %>% 
+  ungroup() %>%
+  arrange(desc(correlation)) %>% 
+  gt() %>% 
+    tab_header(title = "Effect of Changes in Hispanic Population on Democratic Vote Share") %>% 
+    tab_spanner(label = "From 2010 to 2018", columns = TRUE) %>% 
+    cols_align(align = "center", columns = TRUE) %>% 
+  cols_label(county = "County",
+             correlation = "Correlation")
+```
+
+```{r model, echo=FALSE}
+model_1 <- lm(percentage_votes ~ hisp_perc + county,
+             data = data_dems)
+
+model_1 %>% 
+  tidy(conf.int = TRUE) %>% 
+  select(term, estimate, conf.low, conf.high) %>% 
+  gt() %>% 
+    tab_header(title = "Efffect of Hispanic Population Change on Democratic Vote Share") %>% 
+    tab_spanner(label = "Default Estimate is Apache County", columns = TRUE) %>% 
+    cols_label(term = "Variable",
+               estimate = "Estimate",
+               conf.low = "Lower Bound",
+               conf.high = "Upper Bound") %>% 
+    tab_footnote(footnote = "Data from U.S. Census Bureau and Arizona Secretary of State",
+                 cells_title())
+
+predict(model_1, newdata = tibble(hisp_perc = 6, county = "Apache")) %>% 
+  gt() %>% 
+    cols_label(value = "Dem %")
+```
+
+```{r}
+data %>% 
+  filter(year == 2018) %>% 
+  filter(party == "democrat") %>% 
+  select(county, hisp_perc) %>% 
+  arrange(desc(hisp_perc)) %>% 
+  gt() %>% 
+    tab_header(title = "Hispanic Populations by County") %>% 
+    tab_spanner(label = "2018 American Community Survey", columns = TRUE) %>% 
+    tab_footnote(footnote = "Data from U.S. Census Bureau", cells_title()) %>% 
+    cols_label(county = "County",
+               hisp_perc = "Percentage") %>% 
+    cols_align(align = "center", columns = TRUE)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -17,6 +17,7 @@ library(ggthemes)
 library(stringr)
 library(gt)
 library(plotly)
+library(broom)
 library(tidycensus)
 census_api_key("bc6535753047a343a531d92be52cfa8b40d17182", install = TRUE, overwrite = TRUE)
 
@@ -28,50 +29,126 @@ arizona <- get_acs(geography = "county",
 
 data <- read_rds("data_4-24.rds")
 
+az_county_results <- data %>% 
+  select(county, year, party, percentage_votes) %>% 
+  pivot_wider(names_from = party, values_from = percentage_votes) %>% 
+  mutate(difference = democrat - republican) %>% 
+  mutate(county_full = paste(county, "County, Arizona")) %>% 
+  select(county_full, year, democrat, republican, difference)
+
+arizona_county_results_map <- arizona %>% 
+  full_join(az_county_results, by = c("NAME" = "county_full")) %>% 
+  mutate(democrat_rounded = round(democrat, digits = 2)) %>% 
+  mutate(republican_rounded = round(republican, digits = 2))
+
+y <- data %>% 
+  filter(party == "democrat") %>%
+  group_by(year) %>% 
+  summarize(total_hisp_pop = sum(hisp_pop), 
+            total_pop = sum(total_pop),
+            total_dem_votes = sum(candidatevotes),
+            total_votes = sum(totalvotes)) %>% 
+  mutate(hisp_perc_az = (total_hisp_pop / total_pop) * 100) %>% 
+  mutate(dem_perc_az = (total_dem_votes / total_votes) * 100) %>% 
+  mutate(county = "OVERALL") %>% 
+  select(county, year, hisp_perc_az, dem_perc_az)
+
+data_dems <- data %>% 
+  filter(party == "democrat")
+
+model_1 <- lm(percentage_votes ~ hisp_perc + county,
+              data = data_dems)
+
 ui <- fluidPage(
     
-    titlePanel("Effect of Demographic Trends on Arizona Politics"),
-    h4("From 2010 through 2018"),
+    titlePanel("Is Arizona More Blue Because It's Less White?"),
+    h4("Demographic Effects on Election Outcomes, 2010-2018"),
     
     navbarPage("",
-            tabPanel(h4("Voter Registration in Arizona by County"),
-                fixedRow(column(3, verticalLayout(
-                                      selectInput("county",
-                                                   "Select a County:",
-                                                   choices = c("Apache",
-                                                               "Cochise",
-                                                               "Coconino",
-                                                               "Gila",
-                                                               "Graham",
-                                                               "Greenlee",
-                                                               "Maricopa",
-                                                               "Mohave",
-                                                               "Navajo",
-                                                               "Pima",
-                                                               "Pinal",
-                                                               "Santa Cruz",
-                                                               "Yavapai",
-                                                               "Yuma"),
-                                                    multiple = FALSE), br(),
-                                      plotOutput("reg_plot", width = "450", height = "330"), br(),
-                                      plotOutput("vote_plot", width = "450", height = "330"))), br(),
-                         column(5, plotlyOutput("arizona_pop_perc", height = "750")), br(),
-                         column(4, plotOutput("perc_hisp_change_perc", height = "750")))), 
+            tabPanel(h4("Arizona Politics"),
+                 fixedRow(column(3, verticalLayout(
+                   selectInput("county1",
+                               "Select a County:",
+                               choices = c("Apache",
+                                           "Cochise",
+                                           "Coconino",
+                                           "Gila",
+                                           "Graham",
+                                           "Greenlee",
+                                           "Maricopa",
+                                           "Mohave",
+                                           "Navajo",
+                                           "Pima",
+                                           "Pinal",
+                                           "Santa Cruz",
+                                           "Yavapai",
+                                           "Yuma"),
+                               multiple = FALSE), br(),
+                     plotOutput("reg_plot", width = "450", height = "330"), br(),
+                     plotOutput("vote_plot", width = "450", height = "330"))),
+                   column(5, verticalLayout(
+                     selectInput("year1",
+                                 "Select an Election Year:",
+                                 choices = c("2010",
+                                             "2012",
+                                             "2014",
+                                             "2016",
+                                             "2018"),
+                                 multiple = FALSE), br(),
+                     plotlyOutput("arizona_county_results_map", height = "700"))),
+                   column(4, verticalLayout(
+                     selectInput("year2",
+                                 "Relative Registration Gains Since...",
+                                 choices = c("2010",
+                                             "2012",
+                                             "2014",
+                                             "2016"),
+                                 multiple = FALSE), br(),
+                      plotOutput("reg_changes_county", height = "700"))))),
             
-            tabPanel(h4("Demographic Changes in Arizona by County")),
+            tabPanel(h4("Arizona Demographics"),
+                fixedRow(column(3, gt_output("hisp_pop_2018")), br(),
+                         column(5, plotlyOutput("arizona_pop_perc", height = "750")), br(),
+                         column(4, plotOutput("perc_hisp_change_perc", height = "750")))),
             
             tabPanel(h4("Is Increased Hispanic Population Correlated with Increased Democratic Vote Share?"),
-              gt_output("correlation")),
+                fixedRow(column(4, gt_output("correlation_county")),
+                         column(4, gt_output("model_gt")),
+                         column(4, verticalLayout(
+                           selectInput("county2",
+                                       "In This County:",
+                                       choices = c("Apache",
+                                                   "Cochise",
+                                                   "Coconino",
+                                                   "Gila",
+                                                   "Graham",
+                                                   "Greenlee",
+                                                   "Maricopa",
+                                                   "Mohave",
+                                                   "Navajo",
+                                                   "Pima",
+                                                   "Pinal",
+                                                   "Santa Cruz",
+                                                   "Yavapai",
+                                                   "Yuma"),
+                                       multiple = FALSE), br(),
+                           numericInput("hisp_pop",
+                                        "With This Hispanic Population:",
+                                        value = "5",
+                                        min = 0,
+                                        max = 100,
+                                        step = 0.1), br(),
+                           gt_output("prediction"), br(),
+                           h3("About"),br(),
+                              htmlOutput("about")))))
             
-            tabPanel(h4("About"),
-                     htmlOutput("about"))
 ))
 
 server <- function(input, output) {
     
     output$reg_plot <- renderPlot({
                 data %>% 
-                  filter(county == input$county) %>% 
+                  filter(county == input$county1) %>% 
                   ggplot(aes(x = year, y = percentage_reg, color = party)) +
                   geom_line(show.legend = FALSE, size = 1.0) +
                   scale_color_manual(values = c("blue3", "red2")) +
@@ -88,7 +165,7 @@ server <- function(input, output) {
         
     output$vote_plot <- renderPlot({
                 data %>% 
-                  filter(county == input$county) %>%
+                  filter(county == input$county1) %>%
                   ggplot(aes(x = year, y = percentage_votes, color = party)) +
                   geom_line(show.legend = FALSE, size = 1.0) +
                   scale_color_manual(values = c("blue3", "red2")) +
@@ -109,10 +186,40 @@ server <- function(input, output) {
                            geom_sf(aes(fill = estimate)) +
                            theme_map() +
                            scale_fill_viridis_c(direction = -1, option = "plasma") +
-                           labs(title = "Hispanic or Latinx Percent of Arizona Population",
+                           labs(title = "Hispanic Population in Arizona by County",
                                 fill = "Percentage"),
                   tooltip = c("text"))
     })
+    
+    output$arizona_county_results_map <- renderPlotly({
+          ggplotly(ggplot(data = arizona_county_results_map %>% 
+                                  filter(year == input$year1), 
+                                  aes(text = paste(NAME, "<br>",
+                                                   "Democratic Percentage:", democrat_rounded,"%", "<br>",
+                                                   "Republican Percentage:", republican_rounded,"%"))) +
+                           geom_sf(aes(fill = difference < 0), show.legend = FALSE) +
+                           theme_map() +
+                           scale_fill_manual(values = c("blue3", "red2")) +
+                           labs(title = "Arizona Top-Ballot Election Results By County",
+                                fill = "Percentage"),
+                           tooltip = c("text")) %>% 
+                           layout(showlegend = FALSE)
+    })
+    
+    output$hisp_pop_2018 <- render_gt({ 
+          data %>% 
+            filter(year == 2018) %>% 
+            filter(party == "democrat") %>% 
+            select(county, hisp_perc) %>% 
+            arrange(desc(hisp_perc)) %>% 
+            gt() %>% 
+            tab_header(title = "Hispanic Populations by County") %>% 
+            tab_spanner(label = "2018 American Community Survey", columns = TRUE) %>% 
+            tab_footnote(footnote = "Data from U.S. Census Bureau", cells_title()) %>% 
+            cols_label(county = "County",
+                       hisp_perc = "Percentage") %>% 
+            cols_align(align = "center", columns = TRUE)
+      })
     
     output$perc_hisp_change_perc <- renderPlot({
                 data %>% 
@@ -127,31 +234,35 @@ server <- function(input, output) {
                   theme_classic() +
                   labs(x = NULL,
                        y = "Change in Hispanic Percentage of Population",
-                       title = "Hispanic Populations Have Grown Faster \n Than County Populations Overall") +
+                       title = "Since 2010, Hispanic Populations Have Grown \n Faster Than County Populations Overall") +
                   coord_flip()
     })
     
     output$reg_changes_county <- renderPlot({
-                data %>% 
-                  filter(year == 2010 | year == 2018) %>% 
+                data %>%
                   select(county, year, party, registration) %>% 
                   pivot_wider(names_from = party, values_from = registration) %>% 
                   mutate(difference = democrat - republican) %>% 
                   select(county, year, difference) %>% 
                   pivot_wider(names_from = year, values_from = difference, names_prefix = "diff_") %>% 
-                  mutate(diff_change = diff_2018 - diff_2010) %>%
-                  ggplot(aes(x = reorder(county, diff_change), y = diff_change, fill = diff_change < 0)) +
+                  mutate(diff_from_2010 = diff_2018 - diff_2010,
+                         diff_from_2012 = diff_2018 - diff_2012,
+                         diff_from_2014 = diff_2018 - diff_2014,
+                         diff_from_2016 = diff_2018 - diff_2016) %>%
+                  select(county, diff_from_2010, diff_from_2012, diff_from_2014, diff_from_2016) %>% 
+                  pivot_longer(diff_from_2010:diff_from_2016, names_to = "year", values_to = "difference",
+                               names_prefix = "diff_from_") %>% 
+                  filter(year == input$year2) %>% 
+                  ggplot(aes(x = reorder(county, difference), y = difference, fill = difference < 0)) +
                   geom_col(show.legend = FALSE) +
                   theme_classic() +
                   labs(x = NULL,
-                       y = "Registration Gains Relative to Other Party",
-                       title = "Where Has Each Party Improved?",
-                       subtitle = "Between 2010 and 2018") +
+                       y = NULL) +
                   coord_flip() +
                   scale_fill_manual(values = c("blue3", "red2"))
     })
     
-    output$correlation <- render_gt({
+    output$correlation_change <- render_gt({
                 perc_change_votes <- data %>% 
                   filter(year == 2010 | year == 2018) %>% 
                   filter(party == "democrat") %>% 
@@ -179,13 +290,66 @@ server <- function(input, output) {
                              perc_change_votes = "Change in Democratic Vote Share (%)")
     })
     
-    output$about <- renderText ({
+    output$correlation_county <- render_gt({
+                data %>% 
+                  filter(party == "democrat") %>% 
+                  full_join(y, by = c("county",
+                                      "year",
+                                      "hisp_perc" = "hisp_perc_az",
+                                      "percentage_votes" = "dem_perc_az")) %>% 
+                  group_by(county) %>% 
+                  mutate(correlation = cor(hisp_perc, percentage_votes)) %>% 
+                  filter(year == 2018) %>% 
+                  select(county, correlation) %>% 
+                  ungroup() %>%
+                  arrange(desc(correlation)) %>% 
+                  gt() %>% 
+                  tab_header(title = "Correlation of Hispanic Population and Democratic Vote Share") %>% 
+                  tab_spanner(label = "From 2010 to 2018", columns = TRUE) %>% 
+                  cols_align(align = "center", columns = TRUE) %>% 
+                  cols_label(county = "County",
+                             correlation = "Correlation") %>% 
+                  tab_footnote(footnote = "Data from U.S. Census Bureau and Arizona Secretary of State",
+                               cells_title())
+    })
+    
+    output$model_gt <- render_gt({
+                model_1 %>% 
+                  tidy(conf.int = TRUE) %>% 
+                  select(term, estimate, conf.low, conf.high) %>% 
+                  gt() %>% 
+                  tab_header(title = "Efffect of Hispanic Population Change on Democratic Vote Share") %>% 
+                  tab_spanner(label = "Default Estimate is Apache County", columns = TRUE) %>% 
+                  cols_label(term = "Variable",
+                             estimate = "Estimate",
+                             conf.low = "Lower Bound",
+                             conf.high = "Upper Bound") %>% 
+                  tab_footnote(footnote = "Data from U.S. Census Bureau and Arizona Secretary of State",
+                               cells_title())
+    })
+    
+    output$prediction <- render_gt({
+                predict(model_1, newdata = tibble(hisp_perc = input$hisp_pop, county = input$county2)) %>% 
+                  gt() %>% 
+                  cols_label(value = "Dem %")
+    })
+    
+    output$about <- renderText({
       
-      "Arizona's electoral landscape seems to be eternally shifting, with the state's prospects of 'going blue' re-emerging every election cycle.
-      This leftward shift is routinely attributed to changing demographics, specifically the state's large and growing Hispanic and Latinx populations.
+      "<p>Arizona's electoral landscape seems to be eternally shifting, with the state's prospects of 'going blue' re-emerging every election cycle.
+      This leftward shift is routinely attributed to changing demographics, specifically the state's large and growing Hispanic and Latinx populations. </br> </br>
+      
       In this project, I sought to determine whether there was any relationship between an increased percentage of the population being Hispanic or Latinx
-      and the vote share won by Democrats in Arizona's fifteen counties. While this relationship may be strengthening as of late, I see little evidence for
-      its validity over the period from 2010 through 2018, with urban/rural sorting appearing to play a larger role in electoral changes."
+      and the vote share won by Democrats in Arizona's fifteen counties. I found that the correlation between Hispanic population and Democratic vote share
+      is extremely strong in Arizona's biggest counties, and much weaker in smaller counties. This leads to a strong correlation statewide. </br> </br>
+      
+      Furthermore, increases in Hispanic populations in every Arizona county should be expected to lead to higher Democratic vote shares statewide in upcoming elections.</p></b> <br/>
+      
+      By: Jacob Hansen <br/><br/>
+      
+      Data: MIT Election Data + Science Lab, <br/>
+      <ul>Arizona Secretary of State, </br>
+      U.S. Census Bureau </ul>"
       
     })
 }
