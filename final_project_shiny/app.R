@@ -20,6 +20,7 @@ library(plotly)
 library(broom)
 library(tidycensus)
 census_api_key("bc6535753047a343a531d92be52cfa8b40d17182", install = TRUE, overwrite = TRUE)
+readRenviron("~/.Renviron")
 
 arizona <- get_acs(geography = "county",
                    state = "AZ",

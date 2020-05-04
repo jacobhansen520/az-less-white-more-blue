@@ -17,7 +17,7 @@ library(janitor)
 library(ggplot2)
 library(ggthemes)
 library(tidycensus)
-census_api_key("bc6535753047a343a531d92be52cfa8b40d17182", install = TRUE, overwrite = TRUE)
+census_api_key("bc6535753047a343a531d92be52cfa8b40d17182", install = TRUE, overwrite=TRUE)
 readRenviron("~/.Renviron")
 library(stringr)
 library(gganimate)
@@ -248,7 +248,7 @@ data %>%
     geom_col() +
     coord_flip()
 
-data %>% 
+hisp_pop_statewide <- data %>% 
   filter(year == 2010 | year == 2018) %>% 
   filter(party == "democrat") %>% 
   select(county, year, hisp_perc) %>% 
@@ -263,6 +263,8 @@ data %>%
          title = "Hispanic Populations Have Grown Faster \n Than County Populations Overall",
          subtitle = "Betweeen 2010 and 2018") +
     coord_flip()
+
+ggsave("hisp_pop_statewide.png", plot = hisp_pop_statewide)
 ```
 
 ```{r}
