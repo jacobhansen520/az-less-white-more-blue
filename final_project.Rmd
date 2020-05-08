@@ -9,6 +9,8 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 options(scipen = 999)
 
+# Loading in the relevant libraries as needed.
+
 library(tidyverse)
 library(readxl)
 library(readr)
@@ -27,6 +29,19 @@ library(broom)
 ```
 
 ```{r reg_data_cleaning, include=FALSE}
+
+# Here, I do most of my data cleaning. Each of these files, which come from the
+# Arizona Secretary of State's Office, were slightly different in format, so I
+# decided to do them all individually. They were then joined together and
+# cleaned, to later be added to the singular dataset used for most of the
+# project.
+
+# I knew from the beginning of the project I wanted to limit my observations to
+# Democrats and Republicans, so I only selected for those columns.
+
+# This project also helped me get really comfortable with pivot_longer() and
+# pivot_wider()!
+
 reg_2004 <- read.csv("raw-data/2005-01-01.csv", skip = 5) %>% 
   clean_names() %>% 
   filter(date_period == "G.E. 2004") %>% 
@@ -101,6 +116,21 @@ reg_2004_to_2018 <- reg_2004 %>%
 ```
 
 ```{r vote_data_cleaning, include=FALSE}
+
+# Here I had to load in some of the data from the MIT election labs. I'm not
+# sure why, but I had a lot of trouble remaining this Rdata file, which always
+# seemed to load in as "x". Thankfully there wasn't any other dataset named x to
+# be confused with, so it ended up being okay.
+
+# I decided to simplify the research be focusing only on "top-ballot" candidates
+# for the two major parties. Essentially, this meant that in Presidential
+# election years I focused on presidential election results, in Senate election
+# years I focused on Senate election results, and in years without presidential
+# or Senate elections, I used gubernatorial races. This eliminated the need to
+# consider "split ballots." Also, top-ballot races always receive the most votes
+# (before voters get bored and give up with more niche races). For these
+# reasons, this seemed like a good analytical choice.
+
 load("raw-data/countypres_2000-2016.Rdata")
 
 AZ_pres <- x %>% 
@@ -120,6 +150,18 @@ AZ_elections_2004_2018 <- AZ_pres %>%
 ```
 
 ```{r race_data, echo=FALSE}
+
+# Like the data from the AZ secretary of state, the census data was a real pain
+# to work with because each year--I focused on even years to match the elections
+# I was analyzing--was done slightly differently. I also had to rename all of
+# the variable names, which were coded. There was also often a single line of
+# data that messed up my cleaning that I could not remove in R, so I deleted the
+# line (which was inconsequential) from the csv file (not best practices, I'm
+# sure! still lots to learn with data cleaning).
+
+# I then was able to join all of these years' worth of data together into one
+# dataset.
+
 race2010 <- read_csv("raw-data/ACSDP5Y2010.DP05_data_with_overlays_2020-04-24T142342.csv",
                      col_types = cols("dp05_0066e" = col_double(),
                                       "dp05_0066pe" = col_double(),
@@ -191,12 +233,29 @@ race <- race2010 %>%
 ```
 
 ```{r combining_data, echo=FALSE}
+
+# I knew I wanted to be able to just analyze one complete dataset, so I combined
+# all of the above data into one tibble, "data". I then saved this file as an
+# rds so that I didn't have to copy all of the data cleaning in the shiny app.R
+# file.
+
+# The few modifications I needed to make to the data for various graphs in the
+# shiny app are included at the top of the shiny file.
+
 data <- race %>% 
   left_join(AZ_elections_2004_2018, by = c("year", "county")) %>% 
   left_join(reg_2004_to_2018, by = c("year", "county", "party"),
             suffix = c("_votes", "_reg"))
 
 saveRDS(data, file = "data_4-24.rds")
+
+# I originally was using functions to make different plots, with the input being
+# the county name. I did this before I really knew how shiny worked. Once I was
+# putting together the app, I realized shiny already had input-based
+# functionality enabled. For this reason, just the internal code of the
+# functions--which creates a ggplot--were included in the shiny app. But I have
+# left the reg_plot and the vote_plot functions in here to show my initial
+# approach to creating these graphs dynamically.
 
 reg_plot <- function(x){
   data %>% 
@@ -236,7 +295,14 @@ vote_plot <- function(x){
 vote_plot("Pima")
 ```
 
-```{r}
+```{r hisp_pop_statewide, include = FALSE}
+
+# We now get into the point where I composed the code for creating graphs that
+# was then copied into the shiny app.R file. Here, I adjusted the "data" tibble
+# as needed to create graphs that visualized changes in voter registration and
+# changes in Hispanic populations in each county over time. This code is also
+# present in the app.R file.
+
 data %>% 
   filter(year == 2010 | year == 2018) %>% 
   filter(party == "democrat") %>% 
@@ -264,10 +330,22 @@ hisp_pop_statewide <- data %>%
          subtitle = "Betweeen 2010 and 2018") +
     coord_flip()
 
+# Also before I knew how shiny worked, I figured it would be easier to paste
+# non-dynamic plots in with a ggsave. I eventually realized this was not the
+# case. As with the functions above, I leave this in as a bit of diary entry.
+
+# It did end up being useful though, because I later wanted a graph that
+# illustrated Hispanic population growth in AZ for another class.
+
 ggsave("hisp_pop_statewide.png", plot = hisp_pop_statewide)
 ```
 
-```{r}
+```{r relative_reg_gains_1, include = FALSE}
+
+# Like above, this is my data adjusting chunk for a graph illustrating party
+# registration gains by county relative to the other major party. This code is
+# also in the shiny app.R file.
+
 data %>%
   select(county, year, party, registration) %>% 
   pivot_wider(names_from = party, values_from = registration) %>% 
@@ -293,7 +371,11 @@ data %>%
     scale_fill_manual(values = c("blue3", "red2"))
 ``` 
 
-```{r}
+```{r relative_reg_gains_2, echo = FALSE}
+
+# An old version of how I was trying to create the graph above. Left as a diary
+# entry!
+
 data %>% 
     filter(year == 2012 | year == 2018) %>% 
     select(county, year, party, registration) %>% 
@@ -313,7 +395,17 @@ data %>%
     scale_fill_manual(values = c("blue", "red"))
 ```
 
-```{r}
+```{r correlations_old, include = FALSE}
+
+# Data adjusting to create a gt table that illustrated the effect of changes in
+# a county's Hispanic population on the democratic party's vote share in that
+# county.
+
+# I later learned that this kind of data analysis was not quite what I was
+# looking to do. This gt table is thus not included in the shiny app, and is
+# replaced with the one created below in code chunk "correlations_new". However,
+# like all of my other mistakes above, I am leaving it in for future reference!
+
 perc_change_votes <- data %>% 
   filter(year == 2010 | year == 2018) %>% 
   filter(party == "democrat") %>% 
@@ -343,6 +435,9 @@ data %>%
 
 ```{r map, echo=FALSE}
 
+# Using the code from past in-class exercises and problem set 4 (I think) to
+# create a demographic map of Arizona.
+
 arizona <- get_acs(geography = "county",
                       state = "AZ",
                       variables = "DP05_0071PE",
@@ -359,6 +454,11 @@ arizona %>%
 ```
 
 ```{r map_data, echo=FALSE}
+
+# Here, I am making data adjustments so that I can create a dynamic graph in
+# which the user can drag their mouse over a county (sort of) and see the
+# election results in that county for a given election year.
+
 az_county_results <- data %>% 
   select(county, year, party, percentage_votes) %>% 
   pivot_wider(names_from = party, values_from = percentage_votes) %>% 
@@ -372,7 +472,15 @@ arizona_county_results_map <- arizona %>%
   mutate(republican_rounded = round(republican, digits = 2))
 ```
 
-```{r correlations, echo=FALSE}
+```{r correlations_new, echo=FALSE}
+
+# Here I realize and correct the statistical mistakes I made in the code chunk
+# "correlations_old". By separating by county, you can see that there's a very
+# strong correlation between demographic changes and electoral changes in each
+# county. This correlation is not equally impactful in every county however!
+# This was the issue in "correlations_old"--I was trying to correlate the impact
+# of changes, not the changes themselves.
+
 y <- data %>% 
   filter(party == "democrat") %>%
   group_by(year) %>% 
@@ -406,6 +514,13 @@ data %>%
 ```
 
 ```{r model, echo=FALSE}
+
+# Here I create a simple model for predicting democratic vote share in a given
+# county based on hispanic population. It effectively shows that a 1% increase
+# in Hispanic population will lead to a 2% increase in democratic vote share. To
+# me, this seems like demographic chnages account for bout half of the change,
+# but are predictive of the full change...if that makes sense. Pretty accurate!
+
 model_1 <- lm(percentage_votes ~ hisp_perc + county,
              data = data_dems)
 
@@ -427,7 +542,15 @@ predict(model_1, newdata = tibble(hisp_perc = 6, county = "Apache")) %>%
     cols_label(value = "Dem %")
 ```
 
-```{r}
+```{r hisp_pop_county}
+
+# Here I create a last gt table that shows the Hispanic population in each
+# county in 2018. This information is useful when interacting with the model
+# above. The model isn't very useful if you don't know what an appropriate
+# Hispanic population is for a given county, so this allows you to make somewhat
+# useful predictions of democratic vote share based on some expected Hispanic
+# population growth.
+
 data %>% 
   filter(year == 2018) %>% 
   filter(party == "democrat") %>% 
@@ -441,30 +564,3 @@ data %>%
                hisp_perc = "Percentage") %>% 
     cols_align(align = "center", columns = TRUE)
 ```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

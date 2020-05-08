@@ -7,6 +7,9 @@
 #    http://shiny.rstudio.com/
 #
 
+
+# Loading the relevant libraries as needed.
+
 library(tidyverse)
 library(readxl)
 library(readr)
@@ -19,8 +22,11 @@ library(gt)
 library(plotly)
 library(broom)
 library(tidycensus)
+library(shinythemes)
 census_api_key("bc6535753047a343a531d92be52cfa8b40d17182", install = TRUE, overwrite = TRUE)
 readRenviron("~/.Renviron")
+
+# Here I'm loading a few data edits needed for various graphs and charts.
 
 arizona <- get_acs(geography = "county",
                    state = "AZ",
@@ -60,11 +66,27 @@ data_dems <- data %>%
 model_1 <- lm(percentage_votes ~ hisp_perc + county,
               data = data_dems)
 
-ui <- fluidPage(
+# I'm going for a three-panel shiny app. I felt like the "About" section was
+# rather small, so I included it in my data analysis page. This was a summary of
+# the project and the conclusion are on the same page.
+
+ui <- fluidPage(theme = shinytheme("flatly"),
+                
+# The flatly shiny theme matches the color scheme of my project the best.
     
     titlePanel("Is Arizona More Blue Because It's Less White?"),
     h4("Demographic Effects on Election Outcomes, 2010-2018"),
-    
+
+# On my first page, I want to include the changes in voter registration and
+# votes for each county (stacked one on top of the other), a map of Arizona
+# election results, and a visual representation of party registration gains in
+# each county. To accomplish this, I split the layout into three columns,
+# appropriately sizes to accommodate each graph. I also used an embedded
+# verticalLayout() element to stack the two line graphs. Because each of these
+# graphs will be interactive, they will need some form of input. The map input
+# is simply the location of the cursor, but will also have a drop-down menu, and
+# the other two will just have drop-down menus.
+
     navbarPage("",
             tabPanel(h4("Arizona Politics"),
                  fixedRow(column(3, verticalLayout(
@@ -106,12 +128,24 @@ ui <- fluidPage(
                                              "2016"),
                                  multiple = FALSE), br(),
                       plotOutput("reg_changes_county", height = "700"))))),
-            
+
+# For the second page, I again want three columns: one a gt table showing
+# demographics for each county, another state map but for demographics, and a
+# chart showing that Hispanic populations are growing faster than overall
+# population in each county.
+       
             tabPanel(h4("Arizona Demographics"),
                 fixedRow(column(3, gt_output("hisp_pop_2018")), br(),
                          column(5, plotlyOutput("arizona_pop_perc", height = "750")), br(),
                          column(4, plotOutput("perc_hisp_change_perc", height = "750")))),
-            
+
+# For the third and final page, I want to display two tables and the model. The
+# best way I can think to display the model is to have two inputs and simply
+# print a gt table with the resulting estimate. To do this, I will use the
+# three-column format (consistency!). I also place the "About" section on this
+# page, because it was short and fit relatively well with the page's other
+# content.
+
             tabPanel(h4("Is Increased Hispanic Population Correlated with Increased Democratic Vote Share?"),
                 fixedRow(column(4, gt_output("correlation_county")),
                          column(4, gt_output("model_gt")),
@@ -144,6 +178,10 @@ ui <- fluidPage(
                               htmlOutput("about")))))
             
 ))
+
+# Here I paste much of the code that was developed in the Rmd file (noted in the
+# code notes there). Any instance where an input is needed is listed here in the
+# code as "input$x".
 
 server <- function(input, output) {
     
@@ -187,7 +225,7 @@ server <- function(input, output) {
                            geom_sf(aes(fill = estimate)) +
                            theme_map() +
                            scale_fill_viridis_c(direction = -1, option = "plasma") +
-                           labs(title = "Hispanic Population in Arizona by County",
+                           labs(title = "Hispanic Population in Arizona by County \n [Hover over the map to see 2018 county demographics]",
                                 fill = "Percentage"),
                   tooltip = c("text"))
     })
@@ -201,7 +239,7 @@ server <- function(input, output) {
                            geom_sf(aes(fill = difference < 0), show.legend = FALSE) +
                            theme_map() +
                            scale_fill_manual(values = c("blue3", "red2")) +
-                           labs(title = "Arizona Top-Ballot Election Results By County",
+                           labs(title = "Arizona Top-Ballot Election Results By County \n [Hover over the map to see election results by year]",
                                 fill = "Percentage"),
                            tooltip = c("text")) %>% 
                            layout(showlegend = FALSE)
@@ -332,8 +370,13 @@ server <- function(input, output) {
     output$prediction <- render_gt({
                 predict(model_1, newdata = tibble(hisp_perc = input$hisp_pop, county = input$county2)) %>% 
                   gt() %>% 
-                  cols_label(value = "Dem %")
+                  cols_label(value = "Expected Dem %")
     })
+ 
+# Finally, this is how I wrote the "About" section. Like I had seen in some
+# other projects, I decided to use some html (and therefore htmlOutput above) so
+# that I could format the text a little better. I capped it off with my name and
+# the data sources, and the project was done!
     
     output$about <- renderText({
       
